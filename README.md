@@ -57,6 +57,19 @@ The optional [Civil Code research instructions](docs/CIVIL_RESEARCH.md) demonstr
 
 A token-gated browser workflow now exists at **`http://127.0.0.1:8000/admin`**. It can import strictly fictional JSON, show a private review queue, compare previous approved text with proposed revisions and approve/reject demo materials. It is **disabled by default** and intentionally cannot publish the unverified Civil Code research corpus. See [local admin setup and cautions](docs/LOCAL_ADMIN.md).
 
+## Independent legal corpus — offline batch importer
+
+The new research importer accepts a folder of JSON legal-instrument manifests, preserving immutable document snapshots, source fingerprints, Jalali/Gregorian date fields and typed amendment/repeal *claims*. Import is quarantined: it never publishes into approved-law APIs or authenticates sources.
+
+```bash
+python -m legalcore.cli corpus-import examples/corpus-demo --dry-run
+python -m legalcore.cli corpus-import examples/corpus-demo
+python -m legalcore.cli corpus-stats
+python -m legalcore.cli corpus-search "آزمایشی"
+```
+
+This public repository ships **fictional documents only**; it does not contain all Iranian laws. Use an isolated local research DB (default `storage/legal-corpus-research.sqlite3`). See [batch importer docs](docs/LEGAL_CORPUS.md).
+
 ## Documentation
 
 - [Architecture and scope](docs/ARCHITECTURE.md)

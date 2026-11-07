@@ -1,0 +1,36 @@
+{
+  "dataset_type": "LEGAL_RESEARCH_BATCH_V1",
+  "documents": [
+    {
+      "id": "fictional-iran-law-001",
+      "title": "قانون ساختگی نمونه برای آزمون بانک مادر (قانون واقعی نیست)",
+      "kind": "law",
+      "issuing_authority": "مرجع فرضی آموزشی",
+      "source_name": "داده ساختگی تولیدشده برای تست",
+      "source_url": "https://example.invalid/fictional-law-001",
+      "source_reference": "FICTIONAL-001",
+      "review_state": "UNVERIFIED",
+      "dates": {
+        "approval": {"calendar": "jalali", "value": "1403/01/01"},
+        "publication": {"calendar": "jalali", "value": "1403/01/05"}
+      },
+      "relations": [],
+      "units": [
+        {"key": "1", "type": "article", "heading": "تعریف نمونه", "text": "ماده آزمایشی یک: این متن برای آزمون ورود گروهی داده است و قانون واقعی نیست."},
+        {"key": "2", "type": "article", "text": "ماده آزمایشی دو: ثبت اصلاحیه باید با حفظ تاریخچه و منبع انجام شود."}
+      ]
+    },
+    {
+      "id": "fictional-iran-regulation-001",
+      "title": "آیین‌نامه ساختگی نمونه (قانون واقعی نیست)",
+      "kind": "regulation",
+      "issuing_authority": "مرجع فرضی آموزشی",
+      "source_name": "داده ساختگی تولیدشده برای تست",
+      "source_url": "https://example.invalid/fictional-regulation-001",
+      "review_state": "UNVERIFIED",
+      "dates": {"approval": {"calendar": "gregorian", "value": "2025-01-10"}},
+      "relations": [{"type": "implements", "target_id": "fictional-iran-law-001"}],
+      "units": [{"key": "1", "type": "article", "text": "ماده آیین‌نامه آزمایشی: کلیه مفاد این نمونه صرفاً ساختگی است."}]
+    }
+  ]
+}
