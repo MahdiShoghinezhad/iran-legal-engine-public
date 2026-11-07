@@ -53,6 +53,10 @@ python -m pytest -q
 
 The optional [Civil Code research instructions](docs/CIVIL_RESEARCH.md) demonstrate downloading the three third-party volumes manually, importing immutable snapshots into a **separate** SQLite database, and opening a local, offline HTML search preview. No actual Civil Code content is committed to this public repository. **This research material is not legally authenticated and cannot be published through the approved-law API.**
 
+## Local-only review dashboard (fictional demo)
+
+A token-gated browser workflow now exists at **`http://127.0.0.1:8000/admin`**. It can import strictly fictional JSON, show a private review queue, compare previous approved text with proposed revisions and approve/reject demo materials. It is **disabled by default** and intentionally cannot publish the unverified Civil Code research corpus. See [local admin setup and cautions](docs/LOCAL_ADMIN.md).
+
 ## Documentation
 
 - [Architecture and scope](docs/ARCHITECTURE.md)

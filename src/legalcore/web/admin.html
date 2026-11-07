@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مدیریت تغییرات — نسخه نمایشی</title>
+<style>
+:root{font:14px/1.9 Tahoma,"Segoe UI",sans-serif;color:#263647;background:#f5f7fb}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:1230px;margin:auto;padding:26px}
+header{display:flex;justify-content:space-between;align-items:center;gap:20px}
+h1{font-size:24px;margin:4px 0}h2{font-size:17px;margin:0 0 15px}
+.sub{color:#758497;font-size:13px}a{color:#177e78;text-decoration:none}
+.notice{background:#fff3dc;border:1px solid #f2d28a;padding:13px 18px;border-radius:13px;margin:19px 0}
+.card{background:#fff;border:1px solid #e0e7ee;border-radius:15px;padding:20px;box-shadow:0 2px 8px #19364906}
+.two{display:grid;grid-template-columns:1fr 1.6fr;gap:17px;margin-top:17px}
+.stack{display:grid;gap:16px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input,textarea{width:100%;border:1px solid #cbd6e0;border-radius:9px;padding:10px 12px;font:inherit}
+input:focus,textarea:focus{outline:2px solid #75b4ae}
+button{font:inherit;background:#fff;border:1px solid #a9bcc4;border-radius:9px;padding:9px 15px;cursor:pointer;color:#234353}
+button:hover{background:#eff8f7}button.primary{background:#126f67;color:white;border-color:#126f67}
+button.danger{background:#a73b3b;color:#fff;border-color:#a73b3b}
+button:disabled{opacity:.55;cursor:not-allowed}
+.top{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+.listbutton{display:block;width:100%;text-align:right;margin:8px 0;border:1px solid #dde4e9;border-radius:9px;padding:11px;background:#f9fbfd}
+.listbutton.active{border-color:#0c8a7c;background:#f0fbf9}
+.small{color:#778696;font-size:12px}.bodytext{white-space:pre-wrap;background:#f7f9fb;border:1px solid #e4ebef;padding:15px;border-radius:8px;min-height:130px;overflow-wrap:anywhere;max-height:440px;overflow-y:auto}
+.diff{font:12px/1.6 Consolas,monospace;direction:ltr;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f9fb;padding:12px;border-radius:10px}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#status{min-height:26px;color:#136e61;font-weight:bold}#status.error{color:#af3636}
+.meta{margin-top:8px;color:#5d6b7b;font-size:12px}
+.bubble{background:#e4f2f1;color:#13665e;border-radius:50px;padding:6px 11px}
+footer{text-align:center;margin:20px;color:#8a96a3;font-size:12px}
+@media(max-width:850px){.top,.two,.compare{grid-template-columns:1fr}.wrap{padding:16px}header{align-items:start}h1{font-size:20px}}
+</style>
+</head>
+<body><main class="wrap">
+<header><div><div class="sub">Iran Legal Engine / Local Review Demo</div><h1>مدیریت مواد و اصلاحیه‌های آزمایشی</h1>
+<p class="sub">صف بررسی، مقایسه نسخه‌ها و تصمیم مستند — بدون انتشار خودکار</p></div>
+<a href="/">بازگشت به پیشخوان عمومی</a></header>
+<div class="notice"><strong>⚠ فقط داده‌های ساختگی:</strong> این صفحه ابزار نمونه‌کار است و برای تأیید قانون واقعی یا متن پژوهشی قانون مدنی مجاز نیست. دسترسی مدیریت به‌صورت پیش‌فرض خاموش است و فقط برای اجرای محلی توصیه می‌شود.</div>
+<section class="card stack">
+<h2>دسترسی مدیریتی محلی</h2>
+<div class="top">
+<label>کلید موقت مدیریت <input type="password" id="token" autocomplete="off" placeholder="کلید LEGAL_ADMIN_TOKEN را وارد کنید"></label>
+<label>نام بررسی‌کننده <input id="reviewer" maxlength="80" autocomplete="off" placeholder="نام نمایشی شما"></label>
+</div>
+<div class="row"><button class="primary" id="connect">اتصال و مشاهده صف</button><span class="small">کلید فقط در حافظه صفحه استفاده می‌شود و در مرورگر ذخیره نمی‌شود.</span></div>
+<div id="status" aria-live="polite"></div>
+</section>
+<div class="two">
+ <div class="stack">
+  <section class="card">
+   <div class="row" style="justify-content:space-between"><h2>صف تغییرات در انتظار</h2><span id="count" class="bubble">—</span></div>
+   <button id="refresh">بارگذاری دوباره صف</button>
+   <div id="queue" class="small" style="margin-top:12px">بعد از ورود کلید، صف نمایش داده می‌شود.</div>
+  </section>
+  <section class="card stack">
+   <h2>واردکردن فایل نمونه JSON</h2>
+   <input type="file" id="file" accept=".json,application/json" aria-label="فایل داده ساختگی">
+   <div class="row"><button id="import" class="primary">ورود فایل و ایجاد صف</button><button id="sample">بارگذاری نمونه دو ماده‌ای</button></div>
+   <div class="small">فقط فایل‌هایی با dataset_type برابر FICTIONAL_DEMO_ONLY پذیرفته می‌شوند؛ فایل‌های پژوهشی قانون مدنی قابل تأیید نیستند.</div>
+  </section>
+ </div>
+ <section class="card stack">
+  <h2 id="heading">جزئیات تغییر</h2>
+  <div id="metadata" class="meta">یکی از موارد صف را انتخاب کنید.</div>
+  <div class="compare"><div><h2>نسخه تأییدشده قبلی</h2><div class="bodytext" id="previous">—</div></div>
+  <div><h2>متن پیشنهادی جدید</h2><div class="bodytext" id="proposed">—</div></div></div>
+  <details><summary>مشاهده تفاوت متنی</summary><pre class="diff" id="diff">—</pre></details>
+  <div class="row"><button id="approve" class="primary" disabled>تأیید نمونه</button><button id="reject" class="danger" disabled>رد نمونه</button></div>
+  <div class="small">تصمیم فقط با نام بررسی‌کننده و تأیید صریح انجام می‌شود؛ سابقه در پایگاه داده محلی نگهداری می‌شود.</div>
+ </section>
+</div>
+<footer>نمونه آموزشی مدیریت نسخه‌های متن — نه خدمت حقوقی رسمی، نه سامانه عمومی آماده بهره‌برداری.</footer>
+</main>
+<script>
+const el=id=>document.getElementById(id);
+let selected=null,auth="";
+function status(message,error=false){el("status").textContent=message;el("status").className=error?"error":""}
+async function request(path,method="GET",payload=null){
+ if(!auth)throw Error("ابتدا با کلید مدیریت متصل شوید.");
+ const headers={"X-Admin-Token":auth};
+ if(payload!==null)headers["Content-Type"]="application/json";
+ const res=await fetch(path,{method,headers,body:payload===null?undefined:JSON.stringify(payload),cache:"no-store"});
+ const value=await res.json().catch(()=>({detail:"خطای ناشناخته"}));
+ if(!res.ok)throw Error((typeof value.detail==="string"?value.detail:"HTTP "+res.status));
+ return value;
+}
+const create=(tag,text)=>{const x=document.createElement(tag);x.textContent=String(text);return x;};
+async function load(){
+ try {
+  const d=await request("/api/v1/admin/pending?limit=100");
+  el("count").textContent=d.total;
+  const holder=el("queue");holder.replaceChildren();
+  if(!d.results.length){holder.append(create("p","موردی در انتظار بررسی نیست."));return;}
+  for(const item of d.results){
+   const b=create("button",item.title+" / ماده "+item.article_key+" / #"+item.id);
+   b.className="listbutton"+(selected===item.id?" active":"");
+   b.onclick=()=>detail(item.id);holder.append(b);
+  }
+  if(d.total>100)holder.append(create("p","بیش از ۱۰۰ مورد وجود دارد؛ نمایش همه موارد در نسخه بعدی اضافه خواهد شد."));
+ }catch(e){status("خطا: "+e.message,true);}
+}
+async function detail(id){
+ try{
+  const item=await request("/api/v1/admin/pending/"+id);
+  selected=id;el("heading").textContent="بررسی ماده "+item.article_key+" — "+item.title;
+  el("metadata").textContent="شناسه #"+item.id+" | منبع اعلام‌شده: "+item.source_url+" | وضعیت: "+item.decision;
+  el("previous").textContent=item.previous_text||"این ماده هنوز نسخه تأییدشده قبلی ندارد.";
+  el("proposed").textContent=item.proposed_text;
+  el("diff").textContent=item.unified_diff||"بدون تغییر خطی قابل نمایش";
+  el("approve").disabled=item.decision!=="pending";
+  el("reject").disabled=item.decision!=="pending";
+  load();
+ }catch(e){status("خطا: "+e.message,true);}
+}
+async function decide(action){
+ if(selected===null)return;
+ const reviewer=el("reviewer").value.trim();
+ if(reviewer.length<2){status("نام بررسی‌کننده را وارد کنید.",true);return}
+ const label=action==="approve"?"تأیید":"رد";
+ if(!window.confirm("آیا از "+label+" این تغییر آزمایشی مطمئن هستید؟"))return;
+ try{
+  await request("/api/v1/admin/pending/"+selected+"/decision","POST",{action,reviewer});
+  status("تغییر آزمایشی با موفقیت "+(action==="approve"?"تأیید":"رد")+" شد.");
+  selected=null;el("approve").disabled=true;el("reject").disabled=true;
+  el("previous").textContent="—";el("proposed").textContent="—";el("diff").textContent="—";
+  await load();
+ }catch(e){status("خطا: "+e.message,true);}
+}
+const sample={dataset_type:"FICTIONAL_DEMO_ONLY",documents:[{id:"fictional-legal-demo",title:"مواد ساختگی آموزشی — قانون واقعی نیست",kind:"fictional_demo",source_name:"نمونه آموزشی",source_url:"https://example.invalid/demo-not-a-real-law",articles:[{number:"1",text:"ماده نمونه ۱: این یک متن ساختگی صرفاً برای آزمون پنل مدیریت است."},{number:"2",text:"ماده نمونه ۲: هرگونه استناد حقوقی به این متن ساختگی مجاز نیست."}]}]};
+async function doImport(payload){
+ try{
+  const r=await request("/api/v1/admin/import-demo","POST",payload);
+  status("ورود انجام شد. پیشنهادی جدید: "+r.proposed+" | تکراری: "+r.already_pending+" | بدون تغییر: "+r.unchanged);
+  await load();
+ }catch(e){status("خطا در ورود: "+e.message,true);}
+}
+el("connect").onclick=()=>{auth=el("token").value;el("token").value="";load().then(()=>{if(el("count").textContent!=="—")status("اتصال برقرار شد.");});};
+el("refresh").onclick=load;
+el("approve").onclick=()=>decide("approve");
+el("reject").onclick=()=>decide("reject");
+el("sample").onclick=()=>doImport(sample);
+el("import").onclick=async()=>{
+ const file=el("file").files[0];
+ if(!file){status("یک فایل JSON انتخاب کنید.",true);return}
+ if(file.size>256*1024){status("حجم فایل بیش از حد مجاز است.",true);return}
+ try{await doImport(JSON.parse(await file.text()));}catch(e){status("خطا در خواندن JSON: "+e.message,true)}
+};
+</script></body></html>

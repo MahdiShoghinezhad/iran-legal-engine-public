@@ -112,3 +112,8 @@ def search(q: str = Query(..., min_length=2, max_length=120),
             "query": q,
             **search_reviewed_articles(db, q, limit=limit),
         }
+
+
+# Administrative routes are disabled by default and require explicit credentials.
+from .admin import router as admin_router
+app.include_router(admin_router)
