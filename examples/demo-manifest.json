@@ -1,0 +1,24 @@
+{
+  "dataset_type": "FICTIONAL_DEMO_ONLY",
+  "documents": [
+    {
+      "id": "fictional-legal-demo",
+      "title": "مجموعه مواد ساختگی برای آزمایش نرم‌افزار (قانون واقعی نیست)",
+      "kind": "fictional_demo",
+      "source_name": "نمونه آموزشی - بدون اعتبار حقوقی",
+      "source_url": "https://example.invalid/demo-not-a-real-law",
+      "articles": [
+        {
+          "number": "1",
+          "text": "ماده آزمایشی ۱: این متن صرفاً برای نمایش عملکرد نرم‌افزار ایجاد شده و قانون واقعی نیست.",
+          "effective_from": null
+        },
+        {
+          "number": "2",
+          "text": "ماده آزمایشی ۲: هرگونه استفاده حقوقی از این داده ساختگی ممنوع است.",
+          "effective_from": null
+        }
+      ]
+    }
+  ]
+}
