@@ -18,6 +18,11 @@ def fingerprint(text: str) -> str:
 
 def load_manifest(path: str) -> dict:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return validate_manifest(payload)
+
+
+def validate_manifest(payload: dict) -> dict:
+    """Validate parsed source data without a second disk read."""
     if not isinstance(payload, dict) or not isinstance(payload.get("documents"), list):
         raise ValueError("Manifest must have a 'documents' array")
     seen = set()

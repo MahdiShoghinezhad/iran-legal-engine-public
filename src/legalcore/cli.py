@@ -4,7 +4,8 @@ import argparse
 import json
 from .store import connect, initialize
 from .ingest import load_manifest, ingest_manifest
-from .review import pending, decide
+from .review import pending, decide, show_pending
+from .sync import sync_local_manifest
 
 
 def main(argv=None):
@@ -16,6 +17,11 @@ def main(argv=None):
     ingest.add_argument("manifest")
     ingest.add_argument("--dry-run", action="store_true")
     subs.add_parser("pending")
+    detail = subs.add_parser("show-pending")
+    detail.add_argument("review_id", type=int)
+    sync = subs.add_parser("sync-local")
+    sync.add_argument("manifest")
+    sync.add_argument("--dry-run", action="store_true")
     approve = subs.add_parser("approve")
     approve.add_argument("review_id", type=int)
     approve.add_argument("--reviewer", required=True)
@@ -31,6 +37,10 @@ def main(argv=None):
             result = ingest_manifest(db, load_manifest(args.manifest), dry_run=args.dry_run)
         elif args.action == "pending":
             result = {"pending": pending(db)}
+        elif args.action == "show-pending":
+            result = show_pending(db, args.review_id)
+        elif args.action == "sync-local":
+            result = sync_local_manifest(db, args.manifest, dry_run=args.dry_run)
         else:
             result = decide(db, args.review_id, args.reviewer, approve=(args.action == "approve"))
     print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -41,6 +41,17 @@ CREATE TABLE IF NOT EXISTS article_versions (
     approved_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(document_id, article_key, version_number)
 );
+CREATE TABLE IF NOT EXISTS local_sync_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    manifest_name TEXT NOT NULL,
+    content_sha256 TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('ok', 'failed')),
+    proposed INTEGER NOT NULL DEFAULT 0,
+    unchanged INTEGER NOT NULL DEFAULT 0,
+    already_pending INTEGER NOT NULL DEFAULT 0,
+    checked_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_local_sync_runs ON local_sync_runs(id DESC);
 CREATE INDEX IF NOT EXISTS idx_versions_lookup
     ON article_versions(document_id, article_key, version_number DESC);
 """

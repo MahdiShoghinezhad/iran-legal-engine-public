@@ -40,3 +40,14 @@ def decide(conn: sqlite3.Connection, review_id: int, reviewer: str, *, approve: 
     except Exception:
         conn.rollback()
         raise
+
+
+def show_pending(conn: sqlite3.Connection, review_id: int) -> dict:
+    """Display the whole proposed text and claimed provenance for manual review."""
+    row = conn.execute(
+        "SELECT id, document_id, article_key, proposed_text, source_url, effective_from, "
+        "detected_at, decision FROM review_queue WHERE id=?", (review_id,)
+    ).fetchone()
+    if row is None:
+        raise ValueError("Review item not found")
+    return dict(row)

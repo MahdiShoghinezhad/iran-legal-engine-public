@@ -17,6 +17,7 @@ Legal technology needs more than search. Changes to statutes can have different 
 - Read-only FastAPI endpoints for reviewed texts and history
 - Automated tests and GitHub Actions CI
 - Conversion utility for offline, unverified Civil Code JSON data
+- Owner-controlled one-shot local manifest syncing with audit records and manual reviewer text preview
 
 ### Live demo locally (Python 3.11+)
 
@@ -55,6 +56,10 @@ python -m pytest -q
 ## Self-hosted staging readiness
 
 Before deploying alongside an existing Ubuntu server, inspect [`docs/SELF_HOSTED_STAGING.md`](docs/SELF_HOSTED_STAGING.md) and run the read-only [`scripts/server_readiness.sh`](scripts/server_readiness.sh). The software does **not** require an external hosted app to run; official legal-source access is a separate dependency and is not implemented in this demo.
+
+## Offline updates and review
+
+Run `python -m legalcore.cli --db storage/demo.sqlite3 sync-local examples/demo-manifest.json` to stage proposals from a local, fictional JSON manifest; inspect with `show-pending <id>` before using `approve`. This does not connect to official legal sources, schedule itself, or automatically publish revisions. See [local sync instructions](docs/LOCAL_SYNC.md).
 
 ## Documentation
 
