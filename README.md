@@ -15,10 +15,8 @@ Legal technology needs more than search. Changes to statutes can have different 
 - Persian Unicode normalization for change-detection hashes
 - Idempotent repeated ingests, pending status, rejected/approved decisions
 - Read-only FastAPI endpoints for reviewed texts and history
-- Persian full-text demo search across the **latest approved** article versions (with no pending text exposure)
 - Automated tests and GitHub Actions CI
 - Conversion utility for offline, unverified Civil Code JSON data
-- Owner-controlled one-shot local manifest syncing with audit records and manual reviewer text preview
 
 ### Live demo locally (Python 3.11+)
 
@@ -38,12 +36,8 @@ $env:LEGAL_DB='storage/demo.sqlite3'
 uvicorn legalcore.api:app --reload
 ```
 
-Visit **`http://127.0.0.1:8000/` for the Persian visual dashboard** (real API-backed, demo-only data). Visit `http://127.0.0.1:8000/docs` for OpenAPI and API testing, or try:
+Visit `http://127.0.0.1:8000/docs` for OpenAPI and API testing, or try:
 
-- `GET /` (read-only Persian demo dashboard)
-- `GET /api/v1/updates/status` (honest connector status)
-- `GET /api/v1/documents/{document_id}/articles` (latest reviewed article index)
-- `GET /api/v1/search?q=آزمایشی` (Persian search, latest approved versions only)
 - `GET /health`
 - `GET /api/v1/documents`
 - `GET /api/v1/documents/fictional-legal-demo/articles/1`
@@ -55,17 +49,9 @@ Run tests:
 python -m pytest -q
 ```
 
-## Self-hosted staging readiness
+## Unverified Civil Code research import
 
-Before deploying alongside an existing Ubuntu server, inspect [`docs/SELF_HOSTED_STAGING.md`](docs/SELF_HOSTED_STAGING.md) and run the read-only [`scripts/server_readiness.sh`](scripts/server_readiness.sh). The software does **not** require an external hosted app to run; official legal-source access is a separate dependency and is not implemented in this demo.
-
-## Offline updates and review
-
-Run `python -m legalcore.cli --db storage/demo.sqlite3 sync-local examples/demo-manifest.json` to stage proposals from a local, fictional JSON manifest; inspect with `show-pending <id>` before using `approve`. This does not connect to official legal sources, schedule itself, or automatically publish revisions. See [local sync instructions](docs/LOCAL_SYNC.md).
-
-## Demo search implementation
-
-`GET /api/v1/search?q=آزمایشی` searches approved article texts, titles and numbers. It normalizes Arabic/Persian Yeh, Kaf and Persian digits, and never includes pending edits or obsolete revisions. The initial offline implementation is a linear scan appropriate for a small demonstration; a production corpus will require a self-hosted indexed search engine (PostgreSQL FTS or an equivalent).
+The optional [Civil Code research instructions](docs/CIVIL_RESEARCH.md) demonstrate downloading the three third-party volumes manually, importing immutable snapshots into a **separate** SQLite database, and opening a local, offline HTML search preview. No actual Civil Code content is committed to this public repository. **This research material is not legally authenticated and cannot be published through the approved-law API.**
 
 ## Documentation
 
