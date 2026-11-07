@@ -60,9 +60,10 @@ footer{text-align:center;font-size:12px;color:#88949e;padding:30px}
   <div class="layout">
     <section class="panel">
       <div class="row"><h2>اسناد و مواد</h2><button class="refresh" id="refresh">بروزرسانی نما</button></div>
-      <input id="search" placeholder="جست‌وجوی عنوان سند یا شماره ماده…" aria-label="جست‌وجوی اسناد و مواد">
+      <input id="search" placeholder="جست‌وجوی متن، عنوان یا شماره ماده…" aria-label="جست‌وجوی اسناد و مواد">
       <div id="docs" class="empty">در حال دریافت اسناد…</div>
       <div id="articles"></div>
+      <div id="search-results" aria-live="polite"></div>
     </section>
     <section class="panel">
       <div class="row"><h2 id="detail-title">متن ماده</h2><span class="tiny" id="version"></span></div>
@@ -75,7 +76,7 @@ footer{text-align:center;font-size:12px;color:#88949e;padding:30px}
 </div>
 <script>
 const $=id=>document.getElementById(id);
-let documents=[],articles=[],activeDoc=null;
+let documents=[],articles=[],activeDoc=null,searchSerial=0,searchDelay=null;
 const api=async path=>{const res=await fetch(path,{headers:{Accept:"application/json"}});if(!res.ok)throw Error("API "+res.status);return res.json();};
 const clean=node=>node.replaceChildren();
 const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=String(text);if(cls)el.className=cls;return el;};
@@ -87,7 +88,7 @@ documents=docData.documents||[];$("count-docs").textContent=documents.length;
 $("count-articles").textContent=documents.reduce((n,d)=>n+(d.published_articles||0),0);
 $("sync").textContent=status.automatic_monitoring?"فعال":"غیرفعال — منبع وصل نیست";
 $("sync").className=status.automatic_monitoring?"stat ok":"stat";
-renderDocs();
+if($("search").value.trim().length>=2){performSearch();}else{renderDocs();}
 }catch(e){errorMessage("docs","ارتباط با API برقرار نشد: "+e.message);$("sync").textContent="نامشخص";}}
 function renderDocs(){
 const q=$("search").value.trim().toLowerCase();clean($("docs"));
@@ -98,7 +99,7 @@ const b=node("button",d.title,"doc"+(activeDoc===d.id?" active":""));b.type="but
 b.addEventListener("click",()=>selectDoc(d.id));$("docs").append(b);
 }}
 async function selectDoc(id){
-activeDoc=id;renderDocs();$("articles").replaceChildren(node("div","در حال دریافت مواد…","empty"));
+activeDoc=id;$("search").value="";clean($("search-results"));renderDocs();$("articles").replaceChildren(node("div","در حال دریافت مواد…","empty"));
 try{const data=await api("/api/v1/documents/"+encodeURIComponent(id)+"/articles");
 articles=data.articles||[];renderArticles();
 }catch(e){errorMessage("articles","دریافت مواد ناموفق بود: "+e.message);}}
@@ -118,7 +119,35 @@ clean($("detail"));$("detail").append(node("div",a.text,"content"));
 $("hist-title").style.display="block";clean($("hist"));
 for(const item of h.history||[]){$("hist").append(node("div","نسخه "+item.version_number+" | تأییدکننده: "+item.reviewed_by+" | ثبت: "+item.approved_at,"history"));}
 }catch(e){errorMessage("detail","نمایش متن ناموفق بود: "+e.message);}}
-$("search").addEventListener("input",()=>{renderDocs();if(activeDoc)renderArticles();});
+async function performSearch(){
+ const q=$("search").value.trim(),serial=++searchSerial;
+ clean($("search-results"));
+ if(!q){renderDocs();if(activeDoc)renderArticles();return;}
+ clean($("docs"));clean($("articles"));
+ if(q.length<2){$("search-results").append(node("div","برای جست‌وجوی متن حداقل دو حرف وارد کنید.","empty"));return;}
+ $("search-results").append(node("div","در حال جست‌وجو در مواد تأییدشده…","empty"));
+ try {
+  const response=await api("/api/v1/search?q="+encodeURIComponent(q)+"&limit=30");
+  if(serial!==searchSerial)return;
+  clean($("search-results"));
+  $("search-results").append(node("p","نتایج جست‌وجو: "+response.total+" مورد (نمایش حداکثر ۳۰ نتیجه)","tiny"));
+  if(!response.results.length){$("search-results").append(node("div","نتیجه‌ای در متن مواد تأییدشده پیدا نشد.","empty"));}
+  for(const item of response.results){
+    const b=node("button",undefined,"doc");b.type="button";
+    b.append(node("strong",item.title+" — ماده "+item.article_key));
+    b.append(node("div",item.snippet,"muted"));
+    b.onclick=()=>selectArticle(item.document_id,item.article_key);
+    $("search-results").append(b);
+  }
+ } catch(e){
+  if(serial===searchSerial)errorMessage("search-results","جست‌وجو ناموفق بود: "+e.message);
+ }
+}
+$("search").addEventListener("input",()=>{
+ clearTimeout(searchDelay);
+ ++searchSerial;
+ searchDelay=setTimeout(performSearch,250);
+});
 $("refresh").addEventListener("click",load);
 load();
 </script></body></html>

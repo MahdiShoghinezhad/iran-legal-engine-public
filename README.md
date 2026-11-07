@@ -15,6 +15,7 @@ Legal technology needs more than search. Changes to statutes can have different 
 - Persian Unicode normalization for change-detection hashes
 - Idempotent repeated ingests, pending status, rejected/approved decisions
 - Read-only FastAPI endpoints for reviewed texts and history
+- Persian full-text demo search across the **latest approved** article versions (with no pending text exposure)
 - Automated tests and GitHub Actions CI
 - Conversion utility for offline, unverified Civil Code JSON data
 - Owner-controlled one-shot local manifest syncing with audit records and manual reviewer text preview
@@ -42,6 +43,7 @@ Visit **`http://127.0.0.1:8000/` for the Persian visual dashboard** (real API-ba
 - `GET /` (read-only Persian demo dashboard)
 - `GET /api/v1/updates/status` (honest connector status)
 - `GET /api/v1/documents/{document_id}/articles` (latest reviewed article index)
+- `GET /api/v1/search?q=آزمایشی` (Persian search, latest approved versions only)
 - `GET /health`
 - `GET /api/v1/documents`
 - `GET /api/v1/documents/fictional-legal-demo/articles/1`
@@ -60,6 +62,10 @@ Before deploying alongside an existing Ubuntu server, inspect [`docs/SELF_HOSTED
 ## Offline updates and review
 
 Run `python -m legalcore.cli --db storage/demo.sqlite3 sync-local examples/demo-manifest.json` to stage proposals from a local, fictional JSON manifest; inspect with `show-pending <id>` before using `approve`. This does not connect to official legal sources, schedule itself, or automatically publish revisions. See [local sync instructions](docs/LOCAL_SYNC.md).
+
+## Demo search implementation
+
+`GET /api/v1/search?q=آزمایشی` searches approved article texts, titles and numbers. It normalizes Arabic/Persian Yeh, Kaf and Persian digits, and never includes pending edits or obsolete revisions. The initial offline implementation is a linear scan appropriate for a small demonstration; a production corpus will require a self-hosted indexed search engine (PostgreSQL FTS or an equivalent).
 
 ## Documentation
 

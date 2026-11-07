@@ -2,9 +2,10 @@
 from __future__ import annotations
 import os
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from .store import connect, initialize
+from .search import search_reviewed_articles
 
 app = FastAPI(
     title="Iran Legal Engine – Public Demo",
@@ -98,3 +99,16 @@ def document_articles(document_id: str):
             (document_id, document_id),
         ).fetchall()
         return {"demo_only": True, "document": dict(doc), "articles": [dict(row) for row in rows]}
+
+
+@app.get("/api/v1/search")
+def search(q: str = Query(..., min_length=2, max_length=120),
+           limit: int = Query(30, ge=1, le=50)):
+    """Search ONLY the latest approved version of each article."""
+    with connect(db_path()) as db:
+        initialize(db)
+        return {
+            "demo_only": True,
+            "query": q,
+            **search_reviewed_articles(db, q, limit=limit),
+        }
