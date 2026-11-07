@@ -1,7 +1,9 @@
 """Read-only API. Pending proposals are intentionally never exposed."""
 from __future__ import annotations
 import os
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from .store import connect, initialize
 
 app = FastAPI(
@@ -59,3 +61,40 @@ def history(document_id: str, article_key: str):
             (document_id, article_key),
         ).fetchall()
         return {"demo_only": True, "history": [dict(row) for row in rows]}
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def demo_home():
+    """User-facing read-only demo backed by the exact same API and database."""
+    return HTMLResponse((Path(__file__).parent / "web" / "index.html").read_text(encoding="utf-8"))
+
+
+@app.get("/api/v1/updates/status")
+def update_status():
+    """Honest status: a licensed official-source connector has not been implemented."""
+    return {
+        "source_sync": "not_connected",
+        "automatic_monitoring": False,
+        "publication_policy": "review_required",
+        "demo_only": True,
+        "message": "Official source integration is not connected. Changes are currently imported manually.",
+    }
+
+
+@app.get("/api/v1/documents/{document_id}/articles")
+def document_articles(document_id: str):
+    with connect(db_path()) as db:
+        initialize(db)
+        doc = db.execute("SELECT id, title FROM documents WHERE id=?", (document_id,)).fetchone()
+        if doc is None:
+            raise HTTPException(status_code=404, detail="Document not found")
+        rows = db.execute(
+            "SELECT a.article_key, a.version_number, a.approved_at "
+            "FROM article_versions a "
+            "JOIN (SELECT article_key, MAX(version_number) AS latest FROM article_versions "
+            "WHERE document_id=? GROUP BY article_key) q "
+            "ON a.article_key=q.article_key AND a.version_number=q.latest "
+            "WHERE a.document_id=? ORDER BY CAST(a.article_key AS INTEGER), a.article_key",
+            (document_id, document_id),
+        ).fetchall()
+        return {"demo_only": True, "document": dict(doc), "articles": [dict(row) for row in rows]}

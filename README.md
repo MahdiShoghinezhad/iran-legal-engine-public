@@ -36,8 +36,11 @@ $env:LEGAL_DB='storage/demo.sqlite3'
 uvicorn legalcore.api:app --reload
 ```
 
-Visit `http://127.0.0.1:8000/docs` for OpenAPI and API testing, or try:
+Visit **`http://127.0.0.1:8000/` for the Persian visual dashboard** (real API-backed, demo-only data). Visit `http://127.0.0.1:8000/docs` for OpenAPI and API testing, or try:
 
+- `GET /` (read-only Persian demo dashboard)
+- `GET /api/v1/updates/status` (honest connector status)
+- `GET /api/v1/documents/{document_id}/articles` (latest reviewed article index)
 - `GET /health`
 - `GET /api/v1/documents`
 - `GET /api/v1/documents/fictional-legal-demo/articles/1`
