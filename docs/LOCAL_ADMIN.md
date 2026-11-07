@@ -15,8 +15,10 @@ The review dashboard is available at **http://127.0.0.1:8000/admin** after expli
     $env:LEGAL_DB="storage/demo.sqlite3"
     $env:LEGAL_ADMIN_ENABLED="1"
     $tokenBytes = New-Object byte[] 32
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($tokenBytes)
-    $env:LEGAL_ADMIN_TOKEN=[Convert]::ToHexString($tokenBytes)
+    $rng=[System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $rng.GetBytes($tokenBytes)
+    $rng.Dispose()
+    $env:LEGAL_ADMIN_TOKEN=([System.BitConverter]::ToString($tokenBytes)).Replace("-","")
     $env:LEGAL_ADMIN_TOKEN
     python -m uvicorn legalcore.api:app --host 127.0.0.1 --port 8000 --reload
 
