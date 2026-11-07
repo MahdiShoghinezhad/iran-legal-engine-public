@@ -52,6 +52,10 @@ Run tests:
 python -m pytest -q
 ```
 
+## Self-hosted staging readiness
+
+Before deploying alongside an existing Ubuntu server, inspect [`docs/SELF_HOSTED_STAGING.md`](docs/SELF_HOSTED_STAGING.md) and run the read-only [`scripts/server_readiness.sh`](scripts/server_readiness.sh). The software does **not** require an external hosted app to run; official legal-source access is a separate dependency and is not implemented in this demo.
+
 ## Documentation
 
 - [Architecture and scope](docs/ARCHITECTURE.md)
