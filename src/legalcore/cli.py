@@ -8,7 +8,8 @@ from .store import connect, initialize
 from .ingest import load_manifest, ingest_manifest
 from .review import pending, decide, show_pending
 from .sync import sync_local_manifest
-from .corpus import import_directory, corpus_stats, corpus_search
+from .corpus import import_directory, corpus_stats, corpus_search, corpus_browse, corpus_relations
+from .taxonomy import category_catalog
 from .research import (
     import_civil_research, research_stats, research_article,
     research_search, export_research_preview,
@@ -53,7 +54,16 @@ def main(argv=None):
     corp_search = subs.add_parser("corpus-search", help="Search latest unverified research snapshots")
     corp_search.add_argument("phrase")
     corp_search.add_argument("--limit", type=int, default=20)
-    for command in (corp_imp, corp_stats, corp_search):
+    corp_search.add_argument("--category")
+    corp_search.add_argument("--kind")
+    corp_browse = subs.add_parser("corpus-browse", help="List latest research documents by topic/type")
+    corp_browse.add_argument("--category")
+    corp_browse.add_argument("--kind")
+    corp_browse.add_argument("--limit", type=int, default=50)
+    corp_relations = subs.add_parser("corpus-relations", help="Inspect claimed amendment and related-document links")
+    corp_relations.add_argument("instrument_id")
+    corp_categories = subs.add_parser("corpus-categories", help="List independent legal topic categories")
+    for command in (corp_imp, corp_stats, corp_search, corp_browse, corp_relations, corp_categories):
         command.add_argument("--corpus-db", default="storage/legal-corpus-research.sqlite3",
                              help="Dedicated, quarantined research SQLite database path")
     args = parser.parse_args(argv)
@@ -68,8 +78,16 @@ def main(argv=None):
                 result = import_directory(db, args.directory, dry_run=args.dry_run)
             elif args.action == "corpus-stats":
                 result = corpus_stats(db)
+            elif args.action == "corpus-search":
+                result = corpus_search(db, args.phrase, limit=args.limit,
+                                       category=args.category, kind=args.kind)
+            elif args.action == "corpus-browse":
+                result = corpus_browse(db, category=args.category, kind=args.kind,
+                                       limit=args.limit)
+            elif args.action == "corpus-relations":
+                result = corpus_relations(db, args.instrument_id)
             else:
-                result = corpus_search(db, args.phrase, limit=args.limit)
+                result = {"categories": category_catalog(), "by_category": corpus_stats(db)["by_category"]}
         print(json.dumps(result, ensure_ascii=False, indent=2))
         if result.get("errors"):
             raise SystemExit(2)

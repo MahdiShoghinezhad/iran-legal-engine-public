@@ -24,6 +24,10 @@ python -m legalcore.cli corpus-import examples/corpus-demo --dry-run
 python -m legalcore.cli corpus-import examples/corpus-demo
 python -m legalcore.cli corpus-stats
 python -m legalcore.cli corpus-search "آزمایشی"
+python -m legalcore.cli corpus-categories
+python -m legalcore.cli corpus-browse --category civil
+python -m legalcore.cli corpus-search "آزمایشی" --category civil
+python -m legalcore.cli corpus-relations fictional-iran-regulation-001
 ```
 
 Defaults to `storage/legal-corpus-research.sqlite3`, **not** the public application's `storage/demo.sqlite3`. No VPS, Docker or hosted database is required. A production PostgreSQL migration is a later step.
@@ -33,6 +37,8 @@ Defaults to `storage/legal-corpus-research.sqlite3`, **not** the public applicat
 Each `.json` file contains a `dataset_type` of `LEGAL_RESEARCH_BATCH_V1` and a `documents` array (up to 1,000 per file). See [`examples/corpus-demo/sample-batch.json`](../examples/corpus-demo/sample-batch.json).
 
 Document fields:
+
+- `categories`: optional array of up to eight topic identifiers from the locally owned taxonomy (see `python -m legalcore.cli corpus-categories`). These are editorial labels, **not** legal-validity claims.
 
 - `id`: globally stable, lowercase, namespaced ID, e.g. `source-1403-000012`; never guess or change identifiers just because a title changes.
 - `title`, `kind`, `issuing_authority`: **claimed** identity and issuer.
@@ -57,6 +63,13 @@ Save **original documents** and source downloads independently when you have law
 ## Important distinction between sources
 
 Research input may originate from legally permitted official documents (e.g., laws and resolutions) or third-party text archives. **Official provenance must be demonstrated by an auditable original publication and permission to access/reuse it**; the importer does not make that determination. A law, a judicial decision, and an advisory opinion are not legally interchangeable.
+
+## Topic taxonomy and relation graph
+
+- A self-owned, source-neutral set of Persian topic categories is defined in `src/legalcore/taxonomy.py`. These are generic legal subject labels, not a copy of any competitor's legal corpus.
+- An instrument can have multiple categories; labels are stored on immutable snapshots. The latest snapshot's categories are used for browse/search filters; previous classifications remain in history.
+- `corpus-relations` displays claimed document-to-document references, explicitly marking absent targets and every edge `verified=false`. No relation automatically repeals or certifies law.
+- The current implementation searches only local research data and does not retrieve content from an external law-app provider.
 
 ## Next milestones
 

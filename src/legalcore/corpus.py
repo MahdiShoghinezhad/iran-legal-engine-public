@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from .ingest import normalize_persian
+from .taxonomy import CATEGORIES, category_catalog
 
 DATASET_TYPE = "LEGAL_RESEARCH_BATCH_V1"
 KIND = frozenset({
@@ -61,6 +62,12 @@ CREATE TABLE IF NOT EXISTS corpus_units (
     content_sha256 TEXT NOT NULL,
     PRIMARY KEY(snapshot_id,unit_key)
 );
+CREATE TABLE IF NOT EXISTS corpus_snapshot_categories (
+    snapshot_id INTEGER NOT NULL REFERENCES corpus_snapshots(id),
+    category_slug TEXT NOT NULL,
+    PRIMARY KEY(snapshot_id,category_slug)
+);
+CREATE INDEX IF NOT EXISTS idx_corpus_category_slug ON corpus_snapshot_categories(category_slug,snapshot_id);
 CREATE TABLE IF NOT EXISTS corpus_import_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     file_name TEXT NOT NULL,
@@ -143,6 +150,11 @@ def validate_batch(payload: object) -> list[dict]:
         _required_string(doc.get("title"), "document title")
         if doc.get("kind") not in KIND:
             raise ValueError(f"Invalid legal instrument kind: {doc.get('kind')!r}")
+        categories = doc.get("categories", [])
+        if (not isinstance(categories, list) or len(categories) > 8
+                or len(set(str(x) for x in categories)) != len(categories)
+                or any(not isinstance(x, str) or x not in CATEGORIES for x in categories)):
+            raise ValueError("Document categories must be unique, recognized topic slugs (up to 8)")
         _required_string(doc.get("issuing_authority"), "issuing_authority")
         _required_string(doc.get("source_name"), "source_name")
         _url(doc.get("source_url"), "source_url")
@@ -243,6 +255,11 @@ def import_directory(db: sqlite3.Connection, root: str, *, dry_run: bool = False
                              json.dumps(doc.get("relations", []), ensure_ascii=False),
                              json.dumps(doc, ensure_ascii=False))
                         )
+                        if doc.get("categories"):
+                            db.executemany(
+                                "INSERT INTO corpus_snapshot_categories(snapshot_id,category_slug) VALUES (?,?)",
+                                [(cur.lastrowid, category) for category in doc["categories"]]
+                            )
                         db.executemany(
                             "INSERT INTO corpus_units(snapshot_id,unit_key,unit_type,heading,raw_text,content_sha256) "
                             "VALUES (?,?,?,?,?,?)",
@@ -280,32 +297,127 @@ def corpus_stats(db: sqlite3.Connection) -> dict:
     kinds = db.execute("SELECT s.kind,COUNT(*) AS documents FROM corpus_snapshots s "
                        "WHERE s.id=(SELECT MAX(id) FROM corpus_snapshots WHERE instrument_id=s.instrument_id) "
                        "GROUP BY s.kind ORDER BY s.kind").fetchall()
+    categories = db.execute(
+        "SELECT c.category_slug,COUNT(*) AS documents FROM corpus_snapshot_categories c "
+        "JOIN corpus_snapshots s ON s.id=c.snapshot_id "
+        "WHERE s.id=(SELECT MAX(id) FROM corpus_snapshots WHERE instrument_id=s.instrument_id) "
+        "GROUP BY c.category_slug ORDER BY c.category_slug"
+    ).fetchall()
     return {"confidence": "UNVERIFIED", "publicly_published": False,
             "instruments": total, "snapshots": snapshots, "latest_units": units,
-            "by_kind": [dict(row) for row in kinds]}
+            "by_kind": [dict(row) for row in kinds],
+            "by_category": [{"slug": row["category_slug"], "label": CATEGORIES.get(row["category_slug"], "نامشخص"),
+                             "documents": row["documents"]} for row in categories]}
 
 
-def corpus_search(db: sqlite3.Connection, phrase: str, *, limit: int = 20) -> dict:
-    """Developer-only scan, not yet a full-text index for a national corpus."""
+def _category_filter(category: str | None, kind: str | None) -> tuple[str, list]:
+    if category is not None and category not in CATEGORIES:
+        raise ValueError("Unknown topic category")
+    if kind is not None and kind not in KIND:
+        raise ValueError("Unknown instrument kind")
+    conditions = []
+    params = []
+    if category is not None:
+        conditions.append(
+            " AND EXISTS(SELECT 1 FROM corpus_snapshot_categories c "
+            "WHERE c.snapshot_id=s.id AND c.category_slug=?)"
+        )
+        params.append(category)
+    if kind is not None:
+        conditions.append(" AND s.kind=?")
+        params.append(kind)
+    return "".join(conditions), params
+
+
+def _latest_rows(db: sqlite3.Connection, *, category: str | None = None,
+                 kind: str | None = None, with_units: bool = False):
+    where, params = _category_filter(category, kind)
+    select = (
+        "SELECT s.instrument_id,s.id AS snapshot_id,s.title,s.kind,s.source_url,"
+        "s.issuing_authority,s.source_name,s.imported_at,s.dates_json,s.relations_json,"
+        "(SELECT GROUP_CONCAT(c.category_slug,',') FROM corpus_snapshot_categories c "
+        "WHERE c.snapshot_id=s.id) AS category_csv "
+    )
+    join = ""
+    if with_units:
+        select += ",u.unit_key,u.unit_type,u.raw_text "
+        join = " JOIN corpus_units u ON u.snapshot_id=s.id "
+    return db.execute(
+        select + "FROM corpus_snapshots s " + join +
+        "WHERE s.id=(SELECT MAX(id) FROM corpus_snapshots WHERE instrument_id=s.instrument_id)" +
+        where + " ORDER BY s.instrument_id", params
+    ).fetchall()
+
+
+def corpus_browse(db: sqlite3.Connection, *, category: str | None = None,
+                  kind: str | None = None, limit: int = 50) -> dict:
+    """Browse latest UNVERIFIED research versions, never the public API."""
+    if not 1 <= limit <= 1000:
+        raise ValueError("Limit must be 1 to 1000")
+    initialize_corpus(db)
+    rows = _latest_rows(db, category=category, kind=kind)
+    results = [{
+        "id": row["instrument_id"], "title": row["title"], "kind": row["kind"],
+        "snapshot_id": row["snapshot_id"], "source_url": row["source_url"],
+        "issuing_authority": row["issuing_authority"],
+        "categories": (row["category_csv"] or "").split(",") if row["category_csv"] else [],
+    } for row in rows[:limit]]
+    return {
+        "confidence": "UNVERIFIED", "publicly_published": False, "category": category,
+        "kind": kind, "total": len(rows), "results": results, "limit": limit,
+    }
+
+
+def corpus_relations(db: sqlite3.Connection, instrument_id: str) -> dict:
+    """Return declared, UNVERIFIED inter-document references with target availability."""
+    initialize_corpus(db)
+    row = db.execute(
+        "SELECT id,title,relations_json FROM corpus_snapshots WHERE instrument_id=? "
+        "ORDER BY id DESC LIMIT 1", (instrument_id,),
+    ).fetchone()
+    if row is None:
+        raise ValueError("Document not found in research corpus")
+    relations = []
+    for item in json.loads(row["relations_json"]):
+        target = db.execute(
+            "SELECT s.title FROM corpus_snapshots s WHERE s.instrument_id=? "
+            "ORDER BY s.id DESC LIMIT 1", (item["target_id"],),
+        ).fetchone()
+        relations.append({
+            "type": item["type"], "target_id": item["target_id"],
+            "target_present": target is not None,
+            "target_title": target["title"] if target is not None else None,
+            "verified": False,
+        })
+    return {
+        "confidence": "UNVERIFIED", "publicly_published": False,
+        "instrument_id": instrument_id, "relations": relations,
+    }
+
+
+def corpus_search(db: sqlite3.Connection, phrase: str, *, limit: int = 20,
+                  category: str | None = None, kind: str | None = None) -> dict:
+    """Offline latest-snapshot scan with optional topic/type filters. Not public."""
     term = normalize_persian(phrase).casefold()
     if not 2 <= len(term) <= 120 or not 1 <= limit <= 100:
         raise ValueError("Phrase must be 2–120 chars and limit 1–100")
     initialize_corpus(db)
-    rows = db.execute(
-        "SELECT s.instrument_id,s.id AS snapshot_id,s.title,s.kind,s.source_url,"
-        "u.unit_key,u.unit_type,u.raw_text FROM corpus_snapshots s "
-        "JOIN corpus_units u ON u.snapshot_id=s.id "
-        "WHERE s.id=(SELECT MAX(id) FROM corpus_snapshots WHERE instrument_id=s.instrument_id)"
-    )
+    rows = _latest_rows(db, category=category, kind=kind, with_units=True)
     matches = []
     for row in rows:
         if (term not in normalize_persian(row["raw_text"]).casefold()
                 and term not in normalize_persian(row["title"]).casefold()
                 and term != normalize_persian(row["unit_key"]).casefold()):
             continue
-        matches.append({"id": row["instrument_id"], "title": row["title"],
-                        "kind": row["kind"], "unit_key": row["unit_key"],
-                        "unit_type": row["unit_type"], "snippet": row["raw_text"][:180],
-                        "snapshot_id": row["snapshot_id"], "source_url": row["source_url"]})
-    return {"confidence": "UNVERIFIED", "publicly_published": False,
-            "query": phrase, "total": len(matches), "results": matches[:limit]}
+        matches.append({
+            "id": row["instrument_id"], "title": row["title"],
+            "kind": row["kind"], "unit_key": row["unit_key"],
+            "unit_type": row["unit_type"], "snippet": row["raw_text"][:180],
+            "snapshot_id": row["snapshot_id"], "source_url": row["source_url"],
+            "categories": (row["category_csv"] or "").split(",") if row["category_csv"] else [],
+        })
+    return {
+        "confidence": "UNVERIFIED", "publicly_published": False,
+        "query": phrase, "category": category, "kind": kind,
+        "total": len(matches), "results": matches[:limit],
+    }
