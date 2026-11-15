@@ -9,7 +9,11 @@ from .ingest import load_manifest, ingest_manifest
 from .review import pending, decide, show_pending
 from .sync import sync_local_manifest
 from .corpus import import_directory, corpus_stats, corpus_search, corpus_browse, corpus_relations
-from .evidence import attach_evidence, list_evidence, check_evidence
+from .evidence import attach_evidence, list_evidence, check_evidence, initialize_evidence
+from .source_registry import (
+    bootstrap_sources, list_sources, get_source,
+    register_source, associate_evidence,
+)
 from .taxonomy import category_catalog
 from .corpus_preview import export_corpus_preview
 from .research import (
@@ -84,6 +88,20 @@ def main(argv=None):
     for command in (evidence_add, evidence_list, evidence_check):
         command.add_argument("--corpus-db", default="storage/legal-corpus-research.sqlite3")
         command.add_argument("--evidence-root", default="storage/source-evidence")
+    source_init = subs.add_parser("corpus-source-init", help="Register candidate official source metadata (no downloads)")
+    source_list = subs.add_parser("corpus-source-list", help="List research source registry entries")
+    source_show = subs.add_parser("corpus-source-show", help="Inspect a source profile and review state")
+    source_show.add_argument("source_id")
+    source_register = subs.add_parser("corpus-source-register", help="Register one owner-defined source profile")
+    source_register.add_argument("source_id")
+    source_register.add_argument("--name", required=True)
+    source_register.add_argument("--url", required=True)
+    source_register.add_argument("--role", required=True)
+    source_link = subs.add_parser("corpus-source-link-evidence", help="Link existing research evidence to a claimed source")
+    source_link.add_argument("source_id")
+    source_link.add_argument("evidence_id", type=int)
+    for command in (source_init, source_list, source_show, source_register, source_link):
+        command.add_argument("--corpus-db", default="storage/legal-corpus-research.sqlite3")
     args = parser.parse_args(argv)
     if args.action.startswith("corpus-"):
         research_db = Path(args.corpus_db).resolve()
@@ -92,7 +110,18 @@ def main(argv=None):
         if research_db in protected_paths:
             parser.error("Corpus research database must be separate from the approved-law API database")
         with connect(str(research_db)) as db:
-            if args.action == "corpus-evidence-add":
+            if args.action == "corpus-source-init":
+                result = bootstrap_sources(db)
+            elif args.action == "corpus-source-list":
+                result = list_sources(db)
+            elif args.action == "corpus-source-show":
+                result = get_source(db, args.source_id)
+            elif args.action == "corpus-source-register":
+                result = register_source(db, args.source_id, args.name, args.url, args.role)
+            elif args.action == "corpus-source-link-evidence":
+                initialize_evidence(db)
+                result = associate_evidence(db, args.source_id, args.evidence_id)
+            elif args.action == "corpus-evidence-add":
                 result = attach_evidence(db, args.instrument_id, args.input_file, args.source_url,
                                          source_reference=args.reference, snapshot_id=args.snapshot_id,
                                          evidence_root=args.evidence_root)

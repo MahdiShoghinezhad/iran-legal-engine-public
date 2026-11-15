@@ -78,6 +78,10 @@ This public repository ships **fictional documents only**; it does not contain a
 
 The offline research command `corpus-evidence-add` preserves locally supplied original PDF, HTML, TXT, JSON or XML files under an owner-controlled SHA-256 content-addressed vault. `corpus-evidence-check` checks file integrity, **not** legal authenticity; evidence is linked only to quarantined research snapshots. No official-source connector or third-party law app is required. Read [the evidence vault guide](docs/SOURCE_EVIDENCE.md).
 
+## Independent official-source registry (no network scraping)
+
+The locally owned source registry can seed candidate official website profiles for `qavanin.ir`, `rrk.ir` and `dotic.ir`, associate existing quarantined evidence receipts to a claimed source domain, and report source access/reuse reviews as **UNASSESSED**. It does not fetch or redistribute any legal data. Commands include `corpus-source-init`, `corpus-source-list`, and `corpus-source-link-evidence`. See [offline registry guide](docs/SOURCE_REGISTRY.md).
+
 ## Documentation
 
 - [Architecture and scope](docs/ARCHITECTURE.md)
