@@ -74,6 +74,10 @@ python -m legalcore.cli corpus-preview --output storage/legal-corpus-preview.htm
 
 This public repository ships **fictional documents only**; it does not contain all Iranian laws. Use an isolated local research DB (default `storage/legal-corpus-research.sqlite3`). See [batch importer docs](docs/LEGAL_CORPUS.md).
 
+## Independent original-source evidence receipts
+
+The offline research command `corpus-evidence-add` preserves locally supplied original PDF, HTML, TXT, JSON or XML files under an owner-controlled SHA-256 content-addressed vault. `corpus-evidence-check` checks file integrity, **not** legal authenticity; evidence is linked only to quarantined research snapshots. No official-source connector or third-party law app is required. Read [the evidence vault guide](docs/SOURCE_EVIDENCE.md).
+
 ## Documentation
 
 - [Architecture and scope](docs/ARCHITECTURE.md)

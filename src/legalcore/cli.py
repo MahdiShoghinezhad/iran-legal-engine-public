@@ -9,6 +9,7 @@ from .ingest import load_manifest, ingest_manifest
 from .review import pending, decide, show_pending
 from .sync import sync_local_manifest
 from .corpus import import_directory, corpus_stats, corpus_search, corpus_browse, corpus_relations
+from .evidence import attach_evidence, list_evidence, check_evidence
 from .taxonomy import category_catalog
 from .corpus_preview import export_corpus_preview
 from .research import (
@@ -69,6 +70,20 @@ def main(argv=None):
     for command in (corp_imp, corp_stats, corp_search, corp_browse, corp_relations, corp_categories, corp_preview):
         command.add_argument("--corpus-db", default="storage/legal-corpus-research.sqlite3",
                              help="Dedicated, quarantined research SQLite database path")
+    evidence_add = subs.add_parser("corpus-evidence-add", help="Preserve original local source bytes for a research snapshot")
+    evidence_add.add_argument("instrument_id")
+    evidence_add.add_argument("input_file")
+    evidence_add.add_argument("--source-url", required=True)
+    evidence_add.add_argument("--reference", default="")
+    evidence_add.add_argument("--snapshot-id", type=int)
+    evidence_list = subs.add_parser("corpus-evidence-list", help="List unverified source evidence")
+    evidence_list.add_argument("instrument_id")
+    evidence_list.add_argument("--snapshot-id", type=int)
+    evidence_check = subs.add_parser("corpus-evidence-check", help="Check byte integrity, not legal authenticity")
+    evidence_check.add_argument("evidence_id", type=int)
+    for command in (evidence_add, evidence_list, evidence_check):
+        command.add_argument("--corpus-db", default="storage/legal-corpus-research.sqlite3")
+        command.add_argument("--evidence-root", default="storage/source-evidence")
     args = parser.parse_args(argv)
     if args.action.startswith("corpus-"):
         research_db = Path(args.corpus_db).resolve()
@@ -77,7 +92,15 @@ def main(argv=None):
         if research_db in protected_paths:
             parser.error("Corpus research database must be separate from the approved-law API database")
         with connect(str(research_db)) as db:
-            if args.action == "corpus-import":
+            if args.action == "corpus-evidence-add":
+                result = attach_evidence(db, args.instrument_id, args.input_file, args.source_url,
+                                         source_reference=args.reference, snapshot_id=args.snapshot_id,
+                                         evidence_root=args.evidence_root)
+            elif args.action == "corpus-evidence-list":
+                result = list_evidence(db, args.instrument_id, snapshot_id=args.snapshot_id)
+            elif args.action == "corpus-evidence-check":
+                result = check_evidence(db, args.evidence_id, evidence_root=args.evidence_root)
+            elif args.action == "corpus-import":
                 result = import_directory(db, args.directory, dry_run=args.dry_run)
             elif args.action == "corpus-stats":
                 result = corpus_stats(db)
