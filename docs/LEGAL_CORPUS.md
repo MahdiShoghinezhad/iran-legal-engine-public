@@ -28,6 +28,8 @@ python -m legalcore.cli corpus-categories
 python -m legalcore.cli corpus-browse --category civil
 python -m legalcore.cli corpus-search "آزمایشی" --category civil
 python -m legalcore.cli corpus-relations fictional-iran-regulation-001
+python -m legalcore.cli corpus-preview --output storage/legal-corpus-preview.html
+Start-Process storage/legal-corpus-preview.html
 ```
 
 Defaults to `storage/legal-corpus-research.sqlite3`, **not** the public application's `storage/demo.sqlite3`. No VPS, Docker or hosted database is required. A production PostgreSQL migration is a later step.
@@ -70,6 +72,12 @@ Research input may originate from legally permitted official documents (e.g., la
 - An instrument can have multiple categories; labels are stored on immutable snapshots. The latest snapshot's categories are used for browse/search filters; previous classifications remain in history.
 - `corpus-relations` displays claimed document-to-document references, explicitly marking absent targets and every edge `verified=false`. No relation automatically repeals or certifies law.
 - The current implementation searches only local research data and does not retrieve content from an external law-app provider.
+
+## Local Persian research browser
+
+Use `corpus-preview` to generate a **standalone HTML file** containing the latest unverified snapshots, all local article text, topic/type filters and offline search. It requires no Internet connection, no external JavaScript and no web server. Every page displays a clear research-only warning and **never reads the approved-law database**. The exported HTML may contain entire unverified legal source text, so keep it in the ignored `storage/` folder; do not commit it to GitHub or host it publicly.
+
+The offline exporter is deliberately bounded to 5,000 documents and 20 MiB of JSON to keep local browser performance reasonable. For nationwide datasets, build a paginated, authenticated research UI backed by PostgreSQL; this HTML preview is for early local review only.
 
 ## Next milestones
 

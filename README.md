@@ -69,6 +69,7 @@ python -m legalcore.cli corpus-search "آزمایشی"
 python -m legalcore.cli corpus-categories
 python -m legalcore.cli corpus-browse --category civil
 python -m legalcore.cli corpus-relations fictional-iran-regulation-001
+python -m legalcore.cli corpus-preview --output storage/legal-corpus-preview.html
 ```
 
 This public repository ships **fictional documents only**; it does not contain all Iranian laws. Use an isolated local research DB (default `storage/legal-corpus-research.sqlite3`). See [batch importer docs](docs/LEGAL_CORPUS.md).

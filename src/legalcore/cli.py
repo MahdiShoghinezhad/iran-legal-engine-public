@@ -10,6 +10,7 @@ from .review import pending, decide, show_pending
 from .sync import sync_local_manifest
 from .corpus import import_directory, corpus_stats, corpus_search, corpus_browse, corpus_relations
 from .taxonomy import category_catalog
+from .corpus_preview import export_corpus_preview
 from .research import (
     import_civil_research, research_stats, research_article,
     research_search, export_research_preview,
@@ -63,7 +64,9 @@ def main(argv=None):
     corp_relations = subs.add_parser("corpus-relations", help="Inspect claimed amendment and related-document links")
     corp_relations.add_argument("instrument_id")
     corp_categories = subs.add_parser("corpus-categories", help="List independent legal topic categories")
-    for command in (corp_imp, corp_stats, corp_search, corp_browse, corp_relations, corp_categories):
+    corp_preview = subs.add_parser("corpus-preview", help="Export local offline Persian research browser")
+    corp_preview.add_argument("--output", default="storage/legal-corpus-preview.html")
+    for command in (corp_imp, corp_stats, corp_search, corp_browse, corp_relations, corp_categories, corp_preview):
         command.add_argument("--corpus-db", default="storage/legal-corpus-research.sqlite3",
                              help="Dedicated, quarantined research SQLite database path")
     args = parser.parse_args(argv)
@@ -86,6 +89,8 @@ def main(argv=None):
                                        limit=args.limit)
             elif args.action == "corpus-relations":
                 result = corpus_relations(db, args.instrument_id)
+            elif args.action == "corpus-preview":
+                result = export_corpus_preview(db, args.output)
             else:
                 result = {"categories": category_catalog(), "by_category": corpus_stats(db)["by_category"]}
         print(json.dumps(result, ensure_ascii=False, indent=2))
