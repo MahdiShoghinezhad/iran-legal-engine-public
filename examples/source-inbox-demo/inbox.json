@@ -1,0 +1,12 @@
+{
+  "dataset_type": "LEGAL_SOURCE_INBOX_V1",
+  "records": [
+    {
+      "source_id": "demo-source",
+      "instrument_id": "fictional-iran-law-001",
+      "source_reference": "TEST-001",
+      "local_file": "demo-original.txt",
+      "observed_url": "https://example.invalid/fictional-law-001"
+    }
+  ]
+}

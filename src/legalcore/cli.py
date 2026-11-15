@@ -10,6 +10,7 @@ from .review import pending, decide, show_pending
 from .sync import sync_local_manifest
 from .corpus import import_directory, corpus_stats, corpus_search, corpus_browse, corpus_relations
 from .evidence import attach_evidence, list_evidence, check_evidence, initialize_evidence
+from .source_inbox import import_inbox, inbox_history, inbox_diff
 from .source_registry import (
     bootstrap_sources, list_sources, get_source,
     register_source, associate_evidence,
@@ -102,6 +103,20 @@ def main(argv=None):
     source_link.add_argument("evidence_id", type=int)
     for command in (source_init, source_list, source_show, source_register, source_link):
         command.add_argument("--corpus-db", default="storage/legal-corpus-research.sqlite3")
+    inbox_import = subs.add_parser("corpus-inbox-import", help="Capture local source originals and track byte changes, offline")
+    inbox_import.add_argument("manifest", help="Local source inbox manifest JSON")
+    inbox_import.add_argument("--dry-run", action="store_true")
+    inbox_history_cmd = subs.add_parser("corpus-inbox-history", help="Show immutable source observation history")
+    inbox_history_cmd.add_argument("source_id")
+    inbox_history_cmd.add_argument("instrument_id")
+    inbox_history_cmd.add_argument("source_reference")
+    inbox_diff_cmd = subs.add_parser("corpus-inbox-diff", help="Compare most recent different source file bytes")
+    inbox_diff_cmd.add_argument("source_id")
+    inbox_diff_cmd.add_argument("instrument_id")
+    inbox_diff_cmd.add_argument("source_reference")
+    for command in (inbox_import, inbox_history_cmd, inbox_diff_cmd):
+        command.add_argument("--corpus-db", default="storage/legal-corpus-research.sqlite3")
+        command.add_argument("--evidence-root", default="storage/source-evidence")
     args = parser.parse_args(argv)
     if args.action.startswith("corpus-"):
         research_db = Path(args.corpus_db).resolve()
@@ -110,7 +125,15 @@ def main(argv=None):
         if research_db in protected_paths:
             parser.error("Corpus research database must be separate from the approved-law API database")
         with connect(str(research_db)) as db:
-            if args.action == "corpus-source-init":
+            if args.action == "corpus-inbox-import":
+                result = import_inbox(db, args.manifest, dry_run=args.dry_run,
+                                      evidence_root=args.evidence_root)
+            elif args.action == "corpus-inbox-history":
+                result = inbox_history(db, args.source_id, args.instrument_id, args.source_reference)
+            elif args.action == "corpus-inbox-diff":
+                result = inbox_diff(db, args.source_id, args.instrument_id, args.source_reference,
+                                     evidence_root=args.evidence_root)
+            elif args.action == "corpus-source-init":
                 result = bootstrap_sources(db)
             elif args.action == "corpus-source-list":
                 result = list_sources(db)

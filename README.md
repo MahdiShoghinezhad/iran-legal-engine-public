@@ -82,6 +82,19 @@ The offline research command `corpus-evidence-add` preserves locally supplied or
 
 The locally owned source registry can seed candidate official website profiles for `qavanin.ir`, `rrk.ir` and `dotic.ir`, associate existing quarantined evidence receipts to a claimed source domain, and report source access/reuse reviews as **UNASSESSED**. It does not fetch or redistribute any legal data. Commands include `corpus-source-init`, `corpus-source-list`, and `corpus-source-link-evidence`. See [offline registry guide](docs/SOURCE_REGISTRY.md).
 
+## Local source inbox: immutable originals and change alerts
+
+The owner-controlled offline intake workflow accepts a folder of **locally obtained** source files and a small JSON manifest, verifies its claimed source host against the registry, retains original bytes by SHA-256 and reports `FIRST_SEEN`, `UNCHANGED` or `CHANGED_BYTES` on repeat observations. It never contacts external portals, approves a legal amendment or publishes unverified laws. See [source inbox guide](docs/SOURCE_INBOX.md).
+
+```bash
+python -m legalcore.cli corpus-import examples/corpus-demo
+python -m legalcore.cli corpus-source-register demo-source --name "Fictional Source" --url "https://example.invalid/" --role test_fixture
+python -m legalcore.cli corpus-inbox-import examples/source-inbox-demo/inbox.json --dry-run
+python -m legalcore.cli corpus-inbox-import examples/source-inbox-demo/inbox.json
+python -m legalcore.cli corpus-inbox-history demo-source fictional-iran-law-001 TEST-001
+python -m legalcore.cli corpus-inbox-diff demo-source fictional-iran-law-001 TEST-001
+```
+
 ## Documentation
 
 - [Architecture and scope](docs/ARCHITECTURE.md)

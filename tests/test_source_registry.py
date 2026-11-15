@@ -16,7 +16,7 @@ def db():
     connection.execute(
         "CREATE TABLE corpus_source_evidence (id INTEGER PRIMARY KEY, "
         "snapshot_id INTEGER NOT NULL, observed_url TEXT NOT NULL, "
-        "authenticity_state TEXT NOT NULL DEFAULT 'UNVERIFIED')"
+        "legal_status TEXT NOT NULL DEFAULT 'UNVERIFIED')"
     )
     yield connection
     connection.close()

@@ -135,7 +135,7 @@ def associate_evidence(db: sqlite3.Connection, source_id: str, evidence_id: int)
     initialize_source_registry(db)
     source = get_source(db, source_id)
     row = db.execute(
-        "SELECT id, observed_url, snapshot_id, authenticity_state FROM corpus_source_evidence WHERE id=?",
+        "SELECT id, observed_url, snapshot_id, legal_status FROM corpus_source_evidence WHERE id=?",
         (evidence_id,)
     ).fetchone()
     if row is None:
@@ -145,7 +145,7 @@ def associate_evidence(db: sqlite3.Connection, source_id: str, evidence_id: int)
     host = source["site_host"]
     if claimed_host.removeprefix("www.") != host.removeprefix("www."):
         raise ValueError("Evidence URL hostname is not the selected source hostname")
-    if row["authenticity_state"] != "UNVERIFIED":
+    if row["legal_status"] != "UNVERIFIED":
         raise ValueError("Unexpected evidence authenticity status")
     with db:
         db.execute(
